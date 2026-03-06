@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Security Checker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #f8fafc;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .strength-bar {
+            height: 6px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .check-item {
+            transition: all 0.3s ease;
+        }
+
+        .check-item.valid {
+            color: #4ade80;
+        }
+
+        .check-item.invalid {
+            color: #64748b;
+        }
+
+        .check-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 8px;
+            font-size: 12px;
+            border: 1px solid currentColor;
+        }
+    </style>
+</head>
+<body class="p-4">
+
+    <div class="glass-card w-full max-w-md rounded-2xl p-8 mb-6">
+        <div class="mb-8 text-center">
+            <h1 class="text-3xl font-bold tracking-tight mb-2">ShieldCheck</h1>
+            <p class="text-slate-400 text-sm">Análisis de seguridad en tiempo real</p>
+        </div>
+
+        <!-- Sección de entrada -->
+        <div class="relative mb-6">
+            <input 
+                type="password" 
+                id="passwordInput" 
+                placeholder="Ingresa tu contraseña..." 
+                class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-slate-600"
+            >
+            <button id="toggleView" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Medidor de fuerza -->
+        <div class="mb-6">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Puntaje de Seguridad</span>
+                <span id="strengthText" class="text-xs font-bold uppercase tracking-widest text-slate-400">Esperando...</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full overflow-hidden">
+                <div id="strengthBar" class="strength-bar w-0 bg-slate-600"></div>
+            </div>
+        </div>
+
+        <!-- Lista de requisitos -->
+        <div class="space-y-3">
+            <div id="req-length" class="check-item invalid flex items-center text-sm">
+                <span class="check-icon">✓</span>
+                Al menos 8 caracteres
+            </div>
+            <div id="req-upper" class="check-item invalid flex items-center text-sm">
+                <span class="check-icon">✓</span>
+                Mayúsculas
+            </div>
+            <div id="req-number" class="check-item invalid flex items-center text-sm">
+                <span class="check-icon">✓</span>
+                Contiene un número
+            </div>
+            <div id="req-symbol" class="check-item invalid flex items-center text-sm">
+                <span class="check-icon">✓</span>
+                Carácter especial (@, #, $, etc.)
+            </div>
+        </div>
+
+        <div id="feedbackBox" class="mt-8 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 hidden">
+            <p class="text-xs text-blue-400 leading-relaxed" id="feedbackMsg"></p>
+        </div>
+    </div>
+
+    <!-- Pie de página -->
+    <footer class="text-center text-slate-500 text-xs py-4">
+        <p>© <span id="year"></span> Flor Peña. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        // Configurar año dinámico
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        const passwordInput = document.getElementById('passwordInput');
+        const toggleView = document.getElementById('toggleView');
+        const strengthBar = document.getElementById('strengthBar');
+        const strengthText = document.getElementById('strengthText');
+        const feedbackBox = document.getElementById('feedbackBox');
+        const feedbackMsg = document.getElementById('feedbackMsg');
+
+        const requirements = {
+            length: { el: document.getElementById('req-length'), regex: /.{8,}/ },
+            upper: { el: document.getElementById('req-upper'), regex: /[A-Z]/ },
+            number: { el: document.getElementById('req-number'), regex: /[0-9]/ },
+            symbol: { el: document.getElementById('req-symbol'), regex: /[^A-Za-z0-9]/ }
+        };
+
+        toggleView.addEventListener('click', () => {
+            const isPassword = passwordInput.getAttribute('type') === 'password';
+            passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+        });
+
+        passwordInput.addEventListener('input', () => {
+            const val = passwordInput.value;
+            let score = 0;
+
+            // Validar requisitos
+            Object.keys(requirements).forEach(key => {
+                const req = requirements[key];
+                const isValid = req.regex.test(val);
+                
+                if (isValid) {
+                    req.el.classList.replace('invalid', 'valid');
+                    score++;
+                } else {
+                    req.el.classList.replace('valid', 'invalid');
+                }
+            });
+
+            // Actualizar UI según puntaje
+            updateStrengthUI(score, val.length);
+        });
+
+        function updateStrengthUI(score, length) {
+            if (length === 0) {
+                strengthBar.style.width = '0%';
+                strengthText.innerText = 'Esperando...';
+                strengthText.className = 'text-xs font-bold uppercase tracking-widest text-slate-400';
+                feedbackBox.classList.add('hidden');
+                return;
+            }
+
+            feedbackBox.classList.remove('hidden');
+            let width = '0%';
+            let color = '';
+            let status = '';
+            let message = '';
+
+            // Evaluación de puntaje
+            if (score <= 1) {
+                width = '33%';
+                color = 'bg-red-500';
+                status = 'Débil';
+                message = "Tu contraseña es fácil de adivinar. Intenta agregar más variedad y longitud.";
+            } else if (score <= 3) {
+                width = '66%';
+                color = 'bg-yellow-500';
+                status = 'Media';
+                message = "¡Está mejorando! Agrega símbolos únicos o más caracteres para mayor seguridad.";
+            } else {
+                width = '100%';
+                color = 'bg-green-500';
+                status = 'Fuerte';
+                message = "¡Excelente! Esta contraseña es altamente resistente a ataques de fuerza bruta.";
+            }
+
+            // Ajuste por longitud extrema
+            if (length > 16 && score >= 2) {
+                width = '100%';
+                color = 'bg-green-500';
+                status = 'Fuerte';
+                message = "La longitud es la mejor defensa. Esta es una contraseña sólida.";
+            }
+
+            strengthBar.style.width = width;
+            strengthBar.className = `strength-bar ${color}`;
+            strengthText.innerText = status;
+            strengthText.className = `text-xs font-bold uppercase tracking-widest ${color.replace('bg-', 'text-')}`;
+            feedbackMsg.innerText = message;
+        }
+    </script>
+</body>
+</html>
