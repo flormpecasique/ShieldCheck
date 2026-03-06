@@ -8,7 +8,7 @@ The application helps users understand how secure their passwords are by evaluat
 
 ## 🌐 Live Demo
 
-(You can add the deployed link here if you publish it with Vercel or GitHub Pages)
+👉 https://metodo-steel.vercel.app/
 
 ---
 
