@@ -8,7 +8,7 @@ The application helps users understand how secure their passwords are by evaluat
 
 ## 🌐 Live Demo
 
-👉 https://metodo-steel.vercel.app/
+👉 https://shieldcheck.vercel.app/
 
 ---
 
