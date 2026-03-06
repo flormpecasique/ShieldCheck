@@ -1,4 +1,4 @@
-# shielCheck - Password Security Checker 🔐
+# ShieldCheck - Password Security Checker 🔐
 
 A simple cybersecurity web tool that analyzes password strength in real time.
 
